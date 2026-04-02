@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>我们的婚礼 - 婚纱照</title>
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+body{
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:#f9fafc;
+}
+
+/* 导航栏（保留原样式） */
+.navbar{
+  background:#fff;
+  box-shadow:0 2px 10px rgba(0,0,0,0.05);
+  padding:18px 20px;
+  position:sticky;
+  top:0;
+  z-index:999;
+}
+.nav-container{
+  max-width:1200px; /* 加宽导航容器，适配2列布局 */
+  margin:0 auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.logo{
+  font-size:20px;
+  font-weight:bold;
+  color:#667eea;
+}
+.nav-links a{
+  margin-left:24px;
+  text-decoration:none;
+  color:#444;
+  font-size:15px;
+}
+.active {
+  border-bottom: 3px solid #667eea;
+}
+.nav-links a.active{
+  color:#667eea;
+  font-weight:500;
+}
+
+/* 横幅（保留原样式） */
+.banner{
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  color:#fff;
+  text-align:center;
+  padding:50px 20px;
+}
+.banner h1{
+  font-size:28px;
+  margin-bottom:10px;
+}
+.banner p{
+  font-size:16px;
+  opacity:0.9;
+}
+
+/* 内容区（核心修改：适配2列布局） */
+.content{
+  max-width:1200px; /* 加宽内容容器，让2列更舒展 */
+  margin:40px auto;
+  padding:0 20px;
+  text-align:center;
+}
+.photo-list{
+  display:flex;
+  flex-direction:column;
+  gap:26px;
+  margin-top:30px;
+}
+.photo-item{
+  background:#fff;
+  border-radius:18px;
+  padding:26px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.06);
+}
+.photo-text h3{
+  font-size:18px;
+  color:#2d3748;
+  margin-bottom:6px;
+}
+.photo-text .desc{
+  font-size:14px;
+  color:#888;
+}
+
+/* ========== 核心修改：2列瀑布流布局，适配横竖版 ========== */
+.photo-box{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr); /* 固定2列，均分宽度 */
+  gap:18px; /* 增大间距，提升美观度 */
+  margin-top:18px;
+  width:100%; /* 强制撑满容器 */
+  grid-auto-rows: auto; /* 高度自适应，适配横竖版 */
+  align-items: start; /* 顶部对齐，避免空白 */
+}
+.photo-box img{
+  width:100%; /* 宽度100%撑满单元格 */
+  height:auto; /* 高度自适应，保留照片原始比例 */
+  border-radius:14px;
+  object-fit:contain; /* 完整展示图片，不裁剪 */
+  cursor:pointer;
+  transition:transform 0.3s ease;
+  loading:lazy; /* 懒加载，提升加载速度 */
+}
+.photo-box img:hover{
+  transform:scale(1.02); /* 轻微缩放，避免变形 */
+}
+
+/* ########## 核心修复：全屏弹窗样式 ########## */
+.img-modal{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.95);
+  display:none; /* 默认隐藏 */
+  justify-content:center;
+  align-items:center;
+  z-index:9999;
+  padding:20px; /* 给弹窗加一点内边距，防止按钮贴边 */
+}
+/* 容器：使用相对定位，作为按钮的基准 */
+.modal-content{
+  position:relative; /* 关键：相对定位，让子元素（按钮）相对于它定位 */
+  max-width:95%;
+  max-height:90vh; /* 限制最大高度，不要用90%，避免挤压 */
+}
+/* 图片：独占容器，不与按钮混排 */
+.modal-img{
+  max-width:100%;
+  max-height:85vh;
+  border-radius:14px;
+  object-fit:contain; /* 保持原图比例，不拉伸 */
+  display:block; /* 去除图片默认间隙 */
+}
+/* 关闭按钮：置顶右上角 */
+.close-btn{
+  position:absolute;
+  top:-45px; /* 移到图片外，避免遮挡 */
+  right:0;
+  color:white;
+  font-size:36px;
+  cursor:pointer;
+  width:50px;
+  height:50px;
+  text-align:center;
+  line-height:50px;
+  z-index:10001; /* 保证层级最高 */
+}
+/* 左右切换按钮：贴靠图片左右边缘 */
+.nav-btn{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  color:white;
+  font-size:48px;
+  cursor:pointer;
+  width:60px;
+  height:60px;
+  text-align:center;
+  line-height:60px;
+  background:rgba(102, 126, 234, 0.4);
+  border-radius:50%;
+  user-select:none;
+  z-index:10000;
+}
+.prev-btn{left:-30px;} /* 左按钮靠左，贴在图片边缘 */
+.next-btn{right:-30px;} /* 右按钮靠右，贴在图片边缘 */
+
+/* 移动端适配：依然保持2列，调整高度 */
+@media (max-width:768px) {
+  .photo-box{
+    grid-template-columns:repeat(2, 1fr); /* 移动端也保持2列 */
+    gap:12px;
+  }
+  .photo-box img{
+    border-radius:10px; /* 移动端圆角稍小 */
+  }
+  .nav-btn{
+    font-size:36px;
+    width:50px;
+    height:50px;
+    line-height:50px;
+  }
+  .prev-btn{left:-25px;}
+  .next-btn{right:-25px;}
+  .close-btn{
+    font-size:30px;
+    top:-35px;
+  }
+  .modal-img{
+    max-height:75vh;
+  }
+  .partner-list{
+    flex-direction:column;
+    gap:20px;
+  }
+  /* 移动端加宽容器，充分利用屏幕 */
+  .content, .nav-container{
+    max-width:100%;
+  }
+}
+
+/* 页脚（保留原样式） */
+.footer{
+  background:#f0f7ff;
+  padding:40px 20px;
+  text-align:center;
+  margin-top:40px;
+}
+.footer h2 {
+  font-size:28px;
+  color:#222;
+  margin-bottom:5px;
+}
+.partner-list {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:40px;
+}
+.partner-item {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:24px;
+  font-weight:500;
+  color:#333;
+}
+.partner-item img {
+  width:130px;
+  height:130px;
+  object-fit:contain;
+}
+
+/* 页脚 */
+.footer{
+  background:#f0f7ff; /* 浅蓝色背景，和图片一致 */
+  padding:40px 20px;
+  text-align:center;
+  margin-top:40px;
+}
+.footer h2 {
+  font-size:28px; /* 增大标题字号 */
+  color:#222;
+  margin-bottom:5px;
+}
+.partner-list {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:40px; /* 增大合作伙伴之间的间距 */
+}
+.partner-item {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:24px; /* 增大文字字号 */
+  font-weight:500;
+  color:#333;
+}
+.partner-item img {
+  width:130px; /* 增大图标尺寸 */
+  height:130px;
+  object-fit:contain;
+}
+
+</style>
+</head>
+<body>
+
+<!-- 导航栏 -->
+<div class="navbar">
+  <div class="nav-container">
+    <div class="logo">我们的婚礼</div>
+    <div class="nav-links">
+      <a href="./index.html">婚礼视频</a>
+      <a href="./wedding-photo.html" class="active">婚纱照</a>
+      <a href="./mjfat.html">明君影视</a>
+    </div>
+  </div>
+</div>
+
+<!-- 横幅 -->
+<div class="banner">
+  <h1>婚纱照</h1>
+  <p>定格浪漫，珍藏一生的美好</p>
+</div>
+
+<!-- 婚纱照内容区（43+45张，2列瀑布流布局） -->
+<div class="content">
+  <div class="photo-list">
+    <!-- 第一板块：婚前婚纱照（43张） -->
+    <div class="photo-item">
+      <div class="photo-text">
+        <h3>爱意正启程</h3>
+        <p class="desc">予你情书，记录婚前的温柔时光</p>
+      </div>
+      <div class="photo-box">
+        <!-- 第1-43张婚前婚纱照 -->
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/1.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/1.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/2.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/2.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/3.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/3.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/4.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/4.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/5.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/5.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/6.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/6.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/7.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/7.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/8.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/8.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/9.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/9.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/10.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/10.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/11.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/11.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/12.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/12.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/13.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/13.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/14.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/14.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/15.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/15.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/16.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/16.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/17.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/17.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/18.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/18.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/19.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/19.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/20.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/20.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/21.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/21.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/22.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/22.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/23.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/23.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/24.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/24.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/25.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/25.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/26.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/26.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/27.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/27.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/28.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/28.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/29.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/29.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/30.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/30.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/31.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/31.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/32.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/32.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/33.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/33.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/34.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/34.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/35.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/35.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/36.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/36.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/37.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/37.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/38.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/38.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/39.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/39.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/40.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/40.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/41.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/41.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/42.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/42.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/43.jpg" alt="婚前婚纱照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/pre/43.jpg" referrerpolicy="no-referrer">
+      </div>
+    </div>
+
+    <!-- 第二板块：婚礼进行时（45张） -->
+    <div class="photo-item">
+      <div class="photo-text">
+        <h3>婚礼进行时</h3>
+        <p class="desc">以爱为名，定格仪式的神圣瞬间</p>
+      </div>
+      <div class="photo-box">
+        <!-- 第1-45张婚礼现场照 -->
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/1.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/1.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/2.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/2.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/3.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/3.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/4.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/4.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/5.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/5.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/6.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/6.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/8.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/8.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/9.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/9.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/10.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/10.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/11.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/11.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/12.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/12.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/13.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/13.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/7.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/7.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/14.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/14.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/15.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/15.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/16.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/16.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/17.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/17.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/18.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/18.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/19.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/19.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/20.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/20.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/21.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/21.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/27.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/27.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/23.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/23.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/24.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/24.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/25.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/25.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/26.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/26.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/28.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/28.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/29.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/29.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/22.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/22.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/30.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/30.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/31.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/31.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/32.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/32.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/33.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/33.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/34.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/34.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/35.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/35.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/37.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/37.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/36.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/36.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/38.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/38.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/43.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/43.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/40.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/40.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/41.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/41.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/42.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/42.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/39.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/39.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/44.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/44.jpg" referrerpolicy="no-referrer">
+        <img src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/45.jpg" alt="婚礼现场照" class="gallery-img" data-src="https://gitee.com/gm_xiaoming/photo/raw/master/behind/45.jpg" referrerpolicy="no-referrer">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 图片全屏放大弹窗 -->
+<div class="img-modal" id="imgModal">
+  <!-- 修正结构：图片是独立元素，按钮是相对于图片定位的 -->
+  <div class="modal-content">
+    <img class="modal-img" id="modalImg" src="" alt="全屏婚纱照">
+    <span class="close-btn" id="closeBtn">&times;</span>
+    <span class="nav-btn prev-btn" id="prevBtn">&lt;</span>
+    <span class="nav-btn next-btn" id="nextBtn">&gt;</span>
+  </div>
+</div>
+
+<!-- 全屏放大功能JS -->
+<script>
+  const modal = document.getElementById('imgModal');
+  const modalImg = document.getElementById('modalImg');
+  const closeBtn = document.getElementById('closeBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const galleryImgs = document.querySelectorAll('.gallery-img');
+  
+  let imgList = [];
+  let currentIndex = 0;
+
+  // 收集所有需要预览的图片链接
+  galleryImgs.forEach((img) => {
+    imgList.push(img.getAttribute('data-src'));
+  });
+
+  // 点击图片打开弹窗
+  galleryImgs.forEach((img, index) => {
+    img.addEventListener('click', () => {
+      currentIndex = index;
+      modalImg.src = imgList[currentIndex];
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    });
+  });
+
+  // 关闭弹窗
+  function closeModal() {
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
+
+  // 上一张
+  function prevImg() {
+    currentIndex = (currentIndex - 1 + imgList.length) % imgList.length;
+    modalImg.src = imgList[currentIndex];
+  }
+
+  // 下一张
+  function nextImg() {
+    currentIndex = (currentIndex + 1) % imgList.length;
+    modalImg.src = imgList[currentIndex];
+  }
+
+  // 绑定事件
+  closeBtn.addEventListener('click', closeModal);
+  prevBtn.addEventListener('click', prevImg);
+  nextBtn.addEventListener('click', nextImg);
+
+  // 点击遮罩层（黑色背景）关闭
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // 键盘控制
+  document.addEventListener('keydown', (e) => {
+    if (modal.style.display === 'flex') {
+      if (e.key === 'Escape') closeModal();
+      if (e.key === 'ArrowLeft') prevImg();
+      if (e.key === 'ArrowRight') nextImg();
+    }
+  });
+</script>
+<!-- 页脚 -->
+<div class="footer">
+  <h2>合作伙伴</h2>
+  <div class="partner-list">
+    <div class="partner-item">
+      <img src="./images/mjfat.png" alt="明君影视图标">
+    </div>
+    <div class="partner-item">
+      <img src="./images/byte.png" alt="火山引擎图标">
+    </div>
+  </div>
+</div>
+</body>
+</html>
